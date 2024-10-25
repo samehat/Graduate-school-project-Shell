@@ -7,13 +7,17 @@ def extract_matrices_from_file(file_path):
     with open(file_path, 'r') as file:
         content = file.read()
 
-        # Use regex to find all occurrences of text within {{...}}
-        matches = re.findall(r'\{\{(.*?)\}\}', content)
+        # Use regex to find all occurrences of text within {}
+        matches = re.findall(r'\{(.*?)\}', content)
 
         for match in matches:
-            # Split the string by commas and strip whitespace, storing as list of strings
-            matrix_elements = [element.strip() for element in match.split(',')]
-            matrices.append(matrix_elements)
+            # Check if match is empty (i.e., `{}`)
+            if not match.strip():
+                matrices.append(['-1+0'])
+            else:
+                # Split the string by commas and strip whitespace, storing as list of strings
+                matrix_elements = [element.strip() for element in match.split(',')]
+                matrices.append(matrix_elements)
 
     return matrices
 
@@ -28,30 +32,37 @@ def replace_V_with_numbers(m,v):
     return m
 def change_Sqrt(m): 
     return [s.replace('Sqrt','np.sqrt').replace('[','(').replace(']',')') for s in m]
-v=['1','2','3','4','5','6','7','8','9','10']     
-# Specify the path to your input file
-file_path = 'mat1004.txt'  # Replace with your actual file path
+
+def hamiltonian(v,file_path,nn,p):   
+ v=[str(f) for f in v]
 
 # Extract matrices from the file and print them
-extracted_matrices = extract_matrices_from_file(file_path)
-stored_matrices=[]
-for i in range(len(extracted_matrices)):
- m=extracted_matrices[i]
- m=remove_curly_braces(m)
- m=replace_V_with_numbers(m,v) 
- m= change_Sqrt(m)
- m= [eval(expr) for expr in m]
- dimension= int(np.sqrt(len(m)))
- if len(m)!=1:
+ extracted_matrices = extract_matrices_from_file(file_path)
+ stored_matrices=[]
+ for i in range(len(extracted_matrices)):
+  m=extracted_matrices[i]
+  m=remove_curly_braces(m)
+  m=replace_V_with_numbers(m,v) 
+  m= change_Sqrt(m)
+  m= [eval(expr) for expr in m]
+  if len(m)!=1:
     
-  matrix = [[0 for _ in range(int(np.sqrt(len(m))))] for _ in range(int(np.sqrt(len(m))))]
-  index = 0
- 
-  for k in range(dimension):
-   for j in range(dimension):
+   matrix = [[0 for _ in range(int(np.sqrt(len(m))))] for _ in range(int(np.sqrt(len(m))))]
+   index = 0
+   dimension= int(np.sqrt(len(m)))
+   for k in range(dimension):
+    for j in range(dimension):
       matrix[k][j] = m[index]
       index += 1
- else:
+  else:
      matrix= m[0] 
- stored_matrices.append(matrix)
-print(stored_matrices)
+  stored_matrices.append(matrix)
+  if (nn+p)%2==0:
+   labeled_dict = {f'J[{i}]': value for i, value in enumerate(stored_matrices)}
+  else:
+   labeled_dict = {f'J[{i + 1/2}]': value for i, value in enumerate(stored_matrices)} 
+  
+ return labeled_dict
+
+# Example usage:
+print(hamiltonian([2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], 'mat1004.txt', 10, 4))
