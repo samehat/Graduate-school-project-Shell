@@ -1,69 +1,57 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Oct  9 20:35:56 2024
-
-@author: marah
-"""
-
 import numpy as np
 import random
-def function(m,V,np,nn,J):
- f=0
-    
- for i in range(len(m)):
-     state=0
-     if m[i][0]==np and m[i][1]==nn and m[i][2]==J  :
-      for j in range(10):
-          index=5
-          state+=m[i][index]*V[j]# this will multiply the b values with our V values 
-          index+=index
-      f+=(m[i][3]-state)**2    #the state will contain the sum of the bxr  and this m[i][0] will be the value of Eexp
+from extraction_of_hamiltonien_matrix_elements import calculate_loss_function
+from extraction_of_experimental_energies import experimental_values
+from extraction_of_hamiltonien_matrix_elements import root_mean_square_loss_function
+def function(m,np,nn,J,eigenvalues):
+ f=0   
+ for i in range(len(eigenvalues)):
+     if m[i][0]==np and m[i][1]==nn and m[i][2]==J :
+      f+=(m[i][3]-eigenvalues)**2    #the state will contain the sum of the bxr  and this m[i][0] will be the value of Eexp
  return f
-def diagonalize_matrix(matrix):
-    eigenvalues, eigenvectors = np.linalg.eig(matrix)
-    
-    # Print results
-    print("Eigenvalues:")
-    print(eigenvalues)
-    print("\nEigenvectors:")
-    print(eigenvectors)
-    
-    return eigenvalues, eigenvectors
 
-def simulated_annealing(energy_function,V, initial_temp, cooling_rate, min_temp, max_iterations,m,np,nn,J):
+# the monte carlo method to compute the minimum value of the 
+def simulated_annealing(initial_temp, cooling_rate, min_temp, max_iterations,p,n,filename):
     temp = initial_temp
-    V=V
-    j=0
-    f= function(m,V,np,nn,J)
+    filename=['mat1000.txt','mat1001.txt','mat1002.txt','mat1003.txt','mat1004.txt','mat1004.txt','mat1003.txt','mat1002.txt']   
     
-
+    v=[]
+    v.append(0) # energies will be relative to this energy 
+    for i in range(9):
+      v.append(random.uniform(0,2000))
+    f= root_mean_square_loss_function(filename,p,n,v)  
+    print(f)
     for k in range(max_iterations):
         if temp < min_temp:
             break
-        new_V=[] # new list containing that will contain the new values of V
-        # Generate a new state by a small random change to the current state
-        for j in range(len(V)):
-         new_V.append(V[j]+np.random.uniform(-1, 1))
-        new_f=function(m,new_V,np,nn,J)
+        new_v=[]
+        new_v.append(0) # energies will be relative to this energy 
+        for i in range(9):
+          new_v.append(random.uniform(0,2000))
+        new_f= root_mean_square_loss_function(filename,p,n,new_v) 
         delta_f = new_f - f
 
         # Accept new state if it improves energy or by probability
         if delta_f < 0 or np.random.rand() < np.exp(-delta_f / temp):
             f= new_f
-            for i in range(len(V)):
-                V[i]=new_V[i]
+            v=new_v
 
         # Decrease temperature
         temp *= cooling_rate
 
-    return V
-def b_values_calculator(eigenvectors,matrix):
-    transpose_matrix=np.transpose(matrix)
-    
+    return v,f
 
-m=[]# this will be a list with a list inside of it looking like : np,nn,J,Eexp,Ecal,b0,b1.........,b9
+# Suggested parameters
+initial_temp = 500       # Lower initial temperature for more focused search
+cooling_rate = 0.9      # Faster cooling rate
+min_temp = 1e-4          # Minimum temperature to stop the loop earlier if convergence is found
+max_iterations = 5000000
+p=['0','1','2','3','4','6','7','8']
+n='10'
+filename=['mat1000.txt','mat1001.txt','mat1002.txt','mat1003.txt','mat1004.txt','mat1004.txt','mat1003.txt','mat1002.txt']   
+# Running the simulated annealing algorithm
+result_v, result_f = simulated_annealing(initial_temp, cooling_rate, min_temp, max_iterations,p,n,filename)
 
-initial_state = []     # this will be the initial guess of the parameters 
-for i in range(10):
-    initial_state.append(random.uniform(0,5000))
-
+# Printing the results
+print("Final variable values:", result_v)
+print("Final loss function value:", result_f)
