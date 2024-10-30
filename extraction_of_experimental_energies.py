@@ -1,39 +1,52 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 24 15:30:44 2024
-
-@author: marah
-"""
-# this function will return the experimental values of the specific nn np and  J that you choose 
-def find_all_values_in_column(file_name, col1_val, col2_val, col3_val):
-    matching_values = []  # To store all matching values from column 4 as floats
+def extract_J_values(file_path, target_nn, target_np):
+    matching_J_values = []
     
-    with open(file_name, 'r') as file:
+    with open(file_path, 'r') as file:
+        # Skip the header line
+        next(file)
+        
         for line in file:
-            # Assuming the file is space or tab-separated
-            columns = line.split()  # Adjust split depending on your delimiter, e.g., .split(',')
+            # Split the line into columns based on whitespace
+            columns = line.strip().split()
             
-            # Make sure the line has at least 4 columns to avoid index errors
-            if len(columns) >= 4:
-                # Compare values in columns 1, 2, and 3
-                if columns[0] == str(col1_val) and columns[1] == str(col2_val) and columns[2] == str(col3_val):
-                    try:
-                        # Convert value from column 4 to float and append it to the list
-                        matching_values.append(float(columns[3]))
-                    except ValueError:
-                        print(f"Could not convert {columns[3]} to float")
+            # Check if there are exactly three columns
+            if len(columns) == 3:
+                nn, np, J = columns
+                
+                # Check if nn and np match the target values
+                if nn == target_nn and np == target_np:
+                    matching_J_values.append(J)
     
-    return matching_values
+    return matching_J_values
 
-# Example usage
-file_name = 'Data.txt'
-col1_val = '10'
-col2_val = '4'
-col3_val = '0'
+def extract_energies(file_path, target_nn, target_np, target_j):
+    energy_dict = {}
 
-values = find_all_values_in_column(file_name, col1_val, col2_val, col3_val)
+    with open(file_path, 'r') as file:
+        for line in file:
+            columns = line.split()
+            if len(columns) >= 4:
+                nn, np, j, energy = columns[:4]
+                extra_columns = columns[4:]
+                
+                # Check if nn, np, and j match the target values and there are no '1' in extra columns
+                if int(nn) == target_nn and int(np) == target_np and j == target_j and '1' not in extra_columns:
+                    label = (f"{nn}",f"{np}",f"{j}")
+                    
+                    # Add energy to the list for this label
+                    if label not in energy_dict:
+                        energy_dict[label] = []
+                    energy_dict[label].append(energy)
+                    
+    return energy_dict
 
-if values:
-    print(f"Values in column 4: {values}")
-else:
-    print("No matches found")
+
+def experimental_values(file_name,n,p):
+ J=extract_J_values('J values.txt',str(n),str(p))
+ energies = extract_energies(file_name,n,p,J[0])
+ for i in range(len(J)-1):
+   
+   # Initialize an empty list for this key if it does not exist
+    energies.update(extract_energies(file_name,n,p,J[i+1]))
+ return energies 
