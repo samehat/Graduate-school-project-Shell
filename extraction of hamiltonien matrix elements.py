@@ -1,26 +1,44 @@
 
 import re
 import numpy as np
+import random
+from extraction_of_experimental_energies import experimental_values
+import torch
 def extract_matrices_from_file(file_path):
     matrices = []
 
     with open(file_path, 'r') as file:
         content = file.read()
 
-        # Use regex to find all occurrences of text within {}
-        matches = re.findall(r'\{(.*?)\}', content)
+        # Use regex to find all occurrences of text within {{...}}
+        matches = re.findall(r'\{\{(.*?)\}\}', content)
 
         for match in matches:
-            # Check if match is empty (i.e., `{}`)
-            if not match.strip():
-                matrices.append(['-1+0'])
-            else:
-                # Split the string by commas and strip whitespace, storing as list of strings
-                matrix_elements = [element.strip() for element in match.split(',')]
-                matrices.append(matrix_elements)
+            # Split the string by commas and strip whitespace, storing as list of strings
+            matrix_elements = [element.strip() for element in match.split(',')]
+            matrices.append(matrix_elements)
 
     return matrices
-
+def extract_J_values(file_path, target_nn, target_np):
+    matching_J_values = []
+    
+    with open(file_path, 'r') as file:
+        # Skip the header line
+        next(file)
+        
+        for line in file:
+            # Split the line into columns based on whitespace
+            columns = line.strip().split()
+            
+            # Check if there are exactly three columns
+            if len(columns) == 3:
+                nn, np, J = columns
+                
+                # Check if nn and np match the target values
+                if nn == target_nn and np == target_np:
+                    matching_J_values.append(J)
+    
+    return matching_J_values
 
 def remove_curly_braces(lst):
     # Loop through each string in the list and remove '{' and '}' characters
@@ -32,9 +50,10 @@ def replace_V_with_numbers(m,v):
     return m
 def change_Sqrt(m): 
     return [s.replace('Sqrt','np.sqrt').replace('[','(').replace(']',')') for s in m]
-
-def hamiltonian(v,file_path,nn,p):   
+def hamiltonian(v,n,p,filename):   #n and p should be strings but v not , the function convert it to string 
  v=[str(f) for f in v]
+# Specify the path to your input file
+ file_path = filename  # Replace with your actual file path
 
 # Extract matrices from the file and print them
  extracted_matrices = extract_matrices_from_file(file_path)
@@ -45,24 +64,86 @@ def hamiltonian(v,file_path,nn,p):
   m=replace_V_with_numbers(m,v) 
   m= change_Sqrt(m)
   m= [eval(expr) for expr in m]
+  dimension= int(np.sqrt(len(m)))
   if len(m)!=1:
     
    matrix = [[0 for _ in range(int(np.sqrt(len(m))))] for _ in range(int(np.sqrt(len(m))))]
    index = 0
-   dimension= int(np.sqrt(len(m)))
+ 
    for k in range(dimension):
     for j in range(dimension):
       matrix[k][j] = m[index]
       index += 1
   else:
      matrix= m[0] 
-  stored_matrices.append(matrix)
-  if (nn+p)%2==0:
-   labeled_dict = {f'J[{i}]': value for i, value in enumerate(stored_matrices)}
-  else:
-   labeled_dict = {f'J[{i + 1/2}]': value for i, value in enumerate(stored_matrices)} 
-  
- return labeled_dict
 
-# Example usage:
-print(hamiltonian([2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], 'mat1004.txt', 10, 4))
+  stored_matrices.append(matrix)
+ J=extract_J_values('J values.txt',n,p)
+ labeled_dict = {(n,p,J[i]): stored_matrices[i] for i in range(len(J))}
+
+
+ return labeled_dict, J
+def diagonalize_matrix(filename,p,n,v):# will be a list with the file names as elements 
+  #  v=[]
+   # v.append(0) # energies will be relative to this energy 
+    #for i in range(9):
+     #v.append(random.uniform(0,2000))
+    Calculated_energies={}# a dictionary with the key (n,p,j)
+    for i in range(len(filename)):
+        for j in range(len(filename)):
+            Hamiltonian, J=hamiltonian(v,n,p[j],filename[j])
+            # it will give me a dictionary labeled with (n,p,J)
+            for k in range(len(J)):
+             matrix=Hamiltonian[(n,p[j],J[k])]
+             if isinstance(matrix, list) and all(isinstance(row, list) for row in matrix):
+              eigenvalues, eigenvectors = np.linalg.eig(matrix)
+              Calculated_energies[(n,p[j],J[k])]=eigenvalues
+             else:
+               Calculated_energies[(n,p[j],J[k])]=matrix
+    return Calculated_energies          
+#filename=['mat1000.txt','mat1001.txt','mat1002.txt','mat1003.txt','mat1004.txt']   
+def calculated_excitation_energies(filename,p,n,v):
+ m=diagonalize_matrix(filename,p,n,v)
+ for l in range(len(p)):
+  J=J=extract_J_values('J values.txt','10',p[l])  
+  if isinstance(m[('10',p[l],J[0])],np.ndarray):
+   minimum_energy= np.min(m[('10',p[l],J[0])])
+  else:
+     minimum_energy= m[('10',p[l],J[0])]
+  for i in range(len(J)-1):
+     if isinstance(m[('10',p[l],J[i+1])],np.ndarray):
+      energy= np.min(m[('10',p[l],J[i+1])])
+     else:
+      energy= m[('10',p[l],J[i+1])]
+     minimum_energy=min([energy,minimum_energy])
+  for i in range(len(J)):    
+   if isinstance(m[('10',p[l],J[i])],np.ndarray):
+       for j in range(m[('10',p[l],J[i])].size):
+           m[('10',p[l],J[i])][j]=m[('10',p[l],J[i])][j]-minimum_energy
+   else:
+     m[('10',p[l],J[i])]=m[('10',p[l],J[i])]-minimum_energy
+  for i in range(len(J)):
+      if isinstance(m[('10',p[l],J[i])],np.ndarray): 
+        m[('10',p[l],J[i])].sort()
+ return m  
+def calculate_loss_function(filename,p,n,v):
+ N=0   
+ Ecal= calculated_excitation_energies(filename,p,n,v)
+ Eexp=experimental_values('Data_10_neutrons.txt',10,0)
+ for i in range(9):
+        Eexp.update(experimental_values('Data_10_neutrons.txt',10,i+1))      
+ s=0        
+ for l in range(len(p)):
+   J=extract_J_values('J values.txt','10',p[l])   
+   for k in range(len(J)):
+     if ('10',p[l],J[k]) in Eexp:   
+       for i in range(len(Eexp[('10',p[l],J[k])])):
+         N=N+1  
+         if isinstance(Ecal[('10',p[l],J[k])], float):  
+          s+=(float(Eexp[('10',p[l],J[k])][i])-Ecal[('10',p[l],J[k])])**2
+         else:
+          s+=(float(Eexp[('10',p[l],J[k])][i])-Ecal[('10',p[l],J[k])][i])**2
+ return s,N
+def root_mean_square_loss_function(filename,p,n,v):
+    s,N= calculate_loss_function(filename,p,n,v)
+    return np.sqrt((1/N)*(s))
