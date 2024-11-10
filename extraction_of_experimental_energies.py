@@ -1,4 +1,15 @@
-# -*- coding: utf-8 -*-
+def replace_commas_in_dict(input_dict):
+    # Iterate over each key and value in the dictionary
+    for key, value in input_dict.items():
+        # Check if the value is a string and replace commas with periods
+        if isinstance(value, str):
+            input_dict[key] = value.replace(',', '.')
+        # If the value is a list, iterate and replace commas in each string element
+        elif isinstance(value, list):
+            input_dict[key] = [item.replace(',', '.') if isinstance(item, str) else item for item in value]
+        # If the value is a nested dictionary, recursively call the function
+        elif isinstance(value, dict):
+            replace_commas_in_dict(value)
 def extract_J_values(file_path, target_nn, target_np):
     matching_J_values = []
     
@@ -38,7 +49,7 @@ def extract_energies(file_path, target_nn, target_np, target_j):
                     if label not in energy_dict:
                         energy_dict[label] = []
                     energy_dict[label].append(energy)
-                    
+    replace_commas_in_dict(energy_dict)                
     return energy_dict
 
 
