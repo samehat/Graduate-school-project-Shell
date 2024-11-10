@@ -89,61 +89,68 @@ def diagonalize_matrix(filename,p,n,v):# will be a list with the file names as e
     #for i in range(9):
      #v.append(random.uniform(0,2000))
     Calculated_energies={}# a dictionary with the key (n,p,j)
-    for i in range(len(filename)):
-        for j in range(len(filename)):
-            Hamiltonian, J=hamiltonian(v,n,p[j],filename[j])
+    for z in range(len(n)):
+     for j in range(len(p)):
+            Hamiltonian, J=hamiltonian(v,n[z],p[j],filename[n[z]][j])
             # it will give me a dictionary labeled with (n,p,J)
             for k in range(len(J)):
-             matrix=Hamiltonian[(n,p[j],J[k])]
+             matrix=Hamiltonian[(n[z],p[j],J[k])]
              if isinstance(matrix, list) and all(isinstance(row, list) for row in matrix):
               eigenvalues, eigenvectors = np.linalg.eig(matrix)
-              Calculated_energies[(n,p[j],J[k])]=eigenvalues
+              Calculated_energies[(n[z],p[j],J[k])]=eigenvalues
              else:
-               Calculated_energies[(n,p[j],J[k])]=matrix
+              Calculated_energies[(n[z],p[j],J[k])]=matrix 
+         
     return Calculated_energies          
 #filename=['mat1000.txt','mat1001.txt','mat1002.txt','mat1003.txt','mat1004.txt']   
-def calculated_excitation_energies(filename,p,n,v):
+def calculated_excitation_energies(filename,p,n,v):# n and p are lists 
  m=diagonalize_matrix(filename,p,n,v)
- for l in range(len(p)):
-  J=J=extract_J_values('J values.txt','10',p[l])  
-  if isinstance(m[('10',p[l],J[0])],np.ndarray):
-   minimum_energy= np.min(m[('10',p[l],J[0])])
-  else:
-     minimum_energy= m[('10',p[l],J[0])]
-  for i in range(len(J)-1):
-     if isinstance(m[('10',p[l],J[i+1])],np.ndarray):
-      energy= np.min(m[('10',p[l],J[i+1])])
-     else:
-      energy= m[('10',p[l],J[i+1])]
-     minimum_energy=min([energy,minimum_energy])
-  for i in range(len(J)):    
-   if isinstance(m[('10',p[l],J[i])],np.ndarray):
-       for j in range(m[('10',p[l],J[i])].size):
-           m[('10',p[l],J[i])][j]=m[('10',p[l],J[i])][j]-minimum_energy
+ for z in range(len(n)):   
+  for l in range(len(p)):
+   J=J=extract_J_values('J values.txt',n[z],p[l])  
+   if isinstance(m[(n[z],p[l],J[0])],np.ndarray):
+    minimum_energy= np.min(m[(n[z],p[l],J[0])])
    else:
-     m[('10',p[l],J[i])]=m[('10',p[l],J[i])]-minimum_energy
-  for i in range(len(J)):
-      if isinstance(m[('10',p[l],J[i])],np.ndarray): 
-        m[('10',p[l],J[i])].sort()
+      minimum_energy= m[(n[z],p[l],J[0])]
+   for i in range(len(J)-1):
+      if isinstance(m[(n[z],p[l],J[i+1])],np.ndarray):
+       energy= np.min(m[(n[z],p[l],J[i+1])])
+      else:
+       energy= m[(n[z],p[l],J[i+1])]
+      minimum_energy=min([energy,minimum_energy])
+   for i in range(len(J)):    
+    if isinstance(m[(n[z],p[l],J[i])],np.ndarray):
+        for j in range(m[(n[z],p[l],J[i])].size):
+            m[(n[z],p[l],J[i])][j]=m[(n[z],p[l],J[i])][j]-minimum_energy
+    else:
+      m[(n[z],p[l],J[i])]=m[(n[z],p[l],J[i])]-minimum_energy
+   for i in range(len(J)):
+       if isinstance(m[(n[z],p[l],J[i])],np.ndarray): 
+         m[(n[z],p[l],J[i])].sort()
  return m  
-def calculate_loss_function(filename,p,n,v):
- N=0   
+def calculate_loss_function(filename,p,n,v):#n,p as lists 
+ N=0
+ s=0   
  Ecal= calculated_excitation_energies(filename,p,n,v)
- Eexp=experimental_values('Data_10_neutrons.txt',10,0)
- for i in range(9):
-        Eexp.update(experimental_values('Data_10_neutrons.txt',10,i+1))      
- s=0        
- for l in range(len(p)):
-   J=extract_J_values('J values.txt','10',p[l])   
-   for k in range(len(J)):
-     if ('10',p[l],J[k]) in Eexp:   
-       for i in range(len(Eexp[('10',p[l],J[k])])):
-         N=N+1  
-         if isinstance(Ecal[('10',p[l],J[k])], float):  
-          s+=(float(Eexp[('10',p[l],J[k])][i])-Ecal[('10',p[l],J[k])])**2
-         else:
-          s+=(float(Eexp[('10',p[l],J[k])][i])-Ecal[('10',p[l],J[k])][i])**2
+ for j in range(len(n)):
+   Eexp=[]  
+   Eexp=experimental_values('Data.txt',int(n[j]),0)
+   for i in range(9):
+        Eexp.update(experimental_values('Data.txt',int(n[j]),i+1))
+     
+   for l in range(len(p)):
+    J=extract_J_values('J values.txt',n[j],p[l])   
+    for k in range(len(J)):
+      if (n[j],p[l],J[k]) in Eexp:   
+        for i in range(len(Eexp[(n[j],p[l],J[k])])):
+          N=N+1 
+          if isinstance(Ecal[(n[j],p[l],J[k])], float) or isinstance(Ecal[(n[j],p[l],J[k])], int) :  
+           s+=(float(Eexp[(n[j],p[l],J[k])][i])-Ecal[(n[j],p[l],J[k])])**2
+          else:
+           s+=(float(Eexp[(n[j],p[l],J[k])][i])-Ecal[(n[j],p[l],J[k])][i])**2
  return s,N
 def root_mean_square_loss_function(filename,p,n,v):
     s,N= calculate_loss_function(filename,p,n,v)
     return np.sqrt((1/N)*(s))
+      
+
