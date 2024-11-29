@@ -104,7 +104,7 @@ def v_evaluate(mat,*v):
     
 
 
-test_list=[[10,9],[10,8],[10,7],[10,6],[10,5],[10,3],[10,4],[10,2],[10,1]]
+test_list=[[10,9],[10,8],[10,7],[10,6],[10,5],[10,3],[10,4],[10,2],[10,1],[9,10],[9,9],[9,8],[9,7],[9,6],[9,3],[9,4],[9,2],[9,1]]
 
 def initalization(data):
 
@@ -133,11 +133,50 @@ def initalization(data):
     return dict_mat
     
 dict_th = initalization(data)
+def diagonalisation2(np_list,v):  # plutot une liste de p et de n
 
+    loss_list = np.array([])
+    loss_list2 = np.array([])
+    E_loss_list = np.array([])
+
+    for n_p in np_list:
+
+        n,p=n_p[0],n_p[1]
+        J_list = extract_J_values(n,p)
+        J1_list,E_list = extract_E_J_states(n,p)
+        dico_j = {}
+
+        sub = 1000000000000
+        print(sub)
+
+        for j in J_list: # one iteration of each j in this list
+            mat = v_evaluate(dict_th[(str(n),str(p),str(j))],*v)
+            eigen_mat = np.linalg.eig(mat)[0]
+            print(np.min(eigen_mat))
+            print(sub)
+            if (np.min(eigen_mat) < sub): # if Ground State which should be in first position butif not the case mmmhh
+                sub = np.min(eigen_mat)
+                print(sub)
+            dico_j[j] = np.sort(eigen_mat)
+ 
+        ordered_list = np.zeros(0)
+        print("sub = ",sub)
+        for k in J1_list:
+            ordered_list = np.append(ordered_list,dico_j[Fraction(k)][0])
+            dico_j[Fraction(k)] = np.delete(dico_j[Fraction(k)],0)
+
+        print("sub = ",sub)
+        loss_list2 = np.append(loss_list2,ordered_list)
+        loss_list = np.append(loss_list,ordered_list-sub)
+        E_loss_list = np.append(E_loss_list,E_list)
+        
+    print(loss_list2),print(loss_list)
+    return np.sqrt(np.sum((loss_list-E_loss_list)**2)/loss_list.size)
 
 def diagonalisation(np_list,v):  # plutot une liste de p et de n
 
     loss_list = np.array([])
+    loss_list2 = np.array([])
     E_loss_list = np.array([])
 
     for n_p in np_list:
@@ -162,9 +201,11 @@ def diagonalisation(np_list,v):  # plutot une liste de p et de n
             ordered_list = np.append(ordered_list,dico_j[Fraction(k)][0])
             dico_j[Fraction(k)] = np.delete(dico_j[Fraction(k)],0)
 
+        loss_list2 = np.append(loss_list2,ordered_list)
         loss_list = np.append(loss_list,ordered_list-sub)
         E_loss_list = np.append(E_loss_list,E_list)
         
+    print(loss_list2),print(loss_list)
     return np.sqrt(np.sum((loss_list-E_loss_list)**2)/loss_list.size)
 
 def func_diago(np_list,*v):  # plutot une liste de p et de n
@@ -217,14 +258,13 @@ def func_diago(np_list,*v):  # plutot une liste de p et de n
 
 
 
-fit_list=[[10,9],[10,8],[10,7],[10,6],[10,5],[10,3],[10,4],[10,2],[10,1]]
+fit_list=[[9,6],[9,4],[9,2],[9,3],[9,1]]
 
 def func_inter(input1_list,*v):
     result = []
     #print(input1_list)
     for num in input1_list:
         # Extract the first two digits and the last digit
-        #print(num)
         split = [int(str(int(num))[:-2]), int(str(int(num))[-2:])]
         # Add only if not already in the result
         if split not in result:
@@ -249,12 +289,16 @@ def curv_fit_function(curv_list):
         input_list = np.append(input_list,partial_list)
         
     #print(input_list),#print(output_list)
-    v_th,cov_v_th=curve_fit(func_inter_0,input_list,output_list,p0=np.ones(10)*2000)
-    v_th[0]=v_th[0] -2000
-    loss = diagonalisation(test_list,v_th)
+    v_th,cov_v_th=curve_fit(func_inter_0,input_list,output_list,p0=v_test)
+    v_th[0]=v_th[0] - v_test [0]
+    loss = diagonalisation(fit_list,v_th)
+    for i,vi in enumerate(v_th):
+        print("v["+str(i)+"] = ",vi)
 
-    print("v[0] = ",v_th[0]),print("v[2] = ",v_th[2]),print("v[4] = ",v_th[4]),print("v[6] = ",v_th[6]),print("v[8] = ",v_th[8]),print("loss : ",loss)
+    print("loss : ",loss)
 
 
+
+v_test= [-2321,-1524,-937,-700,-160,-447,140,-640,241,-1752]
+a=[[9,6]]
 curv_fit_function(fit_list)
-
