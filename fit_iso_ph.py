@@ -53,7 +53,6 @@ data = data_exp_form(filepath)
 data = mask_state(data)
 #print(data.head())
 
-
 def extract_J_GS(n,p):
     """
     Return :
@@ -119,17 +118,20 @@ def extract_E_J_states(n,p):
 
     return np.array(ndata['J'].values[:]),np.array(ndata['E'].values[:])
 
-def evaluate_expression(expr, *v):
+def evaluate_expression_v2(expr, *v):
     # Replace variables in the expression
-    for i, val in enumerate(v):
-        expr = expr.replace(f"v[{i}]", str(val))
+    for i, val in enumerate(v[0:5]):                 # v = vpp,vnn,vpn
+        expr = expr.replace(f"vpp[{2*i}]", str(val))
+    for i, val in enumerate(v[5:10]):                 # v = vpp,vnn,vpn
+        expr = expr.replace(f"vnn[{2*i}]", str(val))
+    for i, val in enumerate(v[10:]):                 # v = vpp,vnn,vpn
+        expr = expr.replace(f"vnp[{i}]", str(val))
     # Evaluate the resulting expression
     return eval(expr)
 
 def v_evaluate(mat,*v):
-    return np.array([[evaluate_expression(expr, *v) for expr in sublist] for sublist in mat], dtype=float)
+    return np.array([[evaluate_expression_v2(expr, *v) for expr in sublist] for sublist in mat], dtype=float)
     
-
 # list of the isotopes with data ( to increase if needed or more ) 
 
 test_list=[[10,9],[10,8],[10,7],[10,6],[10,5],[10,3],[10,4],[10,2],
@@ -162,7 +164,7 @@ def initalization(data):
         i = (np[0]+np[1]) % 2 
         J_list = extract_J_values(n,p)
 
-        path = "data\p"+str(p)+"\mat"+f"{n:02}"+f"{p:02}"+".txt"
+        path = "data\piso"+str(p)+"\mat"+f"{n:02}"+f"{p:02}"+".txt"
         with open(path ,"r") as f:
             line = f.read()
             line_list = re.split(r"\n", line)
@@ -183,9 +185,7 @@ def initalization_ph(data):
 
     Shape them in the good format for python
 
-    Stock them into a dictionnary. 
-    
-    ph stands for Particule-Hole symmetry, here n is changed by neutron hole and p stays for particule
+    Stock them into a dictionnary
 
     Parameter :
     ------------
@@ -205,8 +205,7 @@ def initalization_ph(data):
         i = (np[0]+np[1]) % 2 
         J_list = extract_J_values(n,p)
 
-        path = "data\p"+str(10-p)+"\mat"+f"{n:02}"+f"{10-p:02}"+".txt"
-        #print(path)
+        path = "data\piso"+str(p)+"\mat"+f"{n:02}"+f"{p:02}"+".txt"
         with open(path ,"r") as f:
             line = f.read()
             line_list = re.split(r"\n", line)
@@ -224,7 +223,7 @@ def initalization_ph(data):
 #dict_th = initalization(data) # dictionnary of the matrix
 dict_th_ph = initalization_ph(data)
 
-def diagonalisation(np_list,v):  # change the diagonalisation when using particule hole symmetry
+def diagonalisation(np_list,v):  # plutot une liste de p et de n
     '''
     For every isotopes, evaluate all the experimentaly observed spin matrix with the coefficient v
 
@@ -252,7 +251,7 @@ def diagonalisation(np_list,v):  # change the diagonalisation when using particu
     for n_p in np_list:
 
         n,p=n_p[0],n_p[1]
-        #print(n,p)
+        print(n,p)
         J_list = extract_J_values(n,p)
         J1_list,E_list = extract_E_J_states(n,p)
         J0_list = np.append(J1_list,J0_list)
@@ -315,25 +314,6 @@ def func_diago(np_list,*v):
     #print(loss_list)
     return loss_list
 
-
-#v = np.array([0,1000,2000,1500,3000,2600,2700,990,1600,2000])
-#a = diagonalisation(test_list,v)
-#print(a)
-
-  
-# x and y have to be the same size and x must be flatten out in the function donc suivre un certain ordre en connaissant leur taille pour les déflatten out
-# input de la fonction curve_fit : liste de (n,p) à fit
-# créer une liste d'output exp 
-# pour le premier (n1,p1) : faire une liste des J,E pour (n1,p1) dans l'ordre expérimental, la liste des E va se concaténer à une liste
-# E_tot qui prend tout, on garde la taille de cette liste pour flatten out
-# on enchaine pour tous les (nx,px) dans la liste initiale
-# on se retrouve avec des y = E_tot dans l'ordre et une liste de taille des (nx,px)
-# en input juste créer une liste tot de (n_i,p_i) dans le même ordre et les redécouper par taille 
-# la fonction découpe l'input par changement de (ni,pi), crée une liste de (n,p) unique et appelle func_diago qui renvoie 
-# une liste de E_théorique dans le même sens que les E_exp 
-
-
-
 # list of isotopes to fit
 fit_list=[[10,8],[10,7],[10,6],[10,5],[10,4],[10,3],[10,2],
 [9,9],[9,6],[9,5],[9,4],[9,3],[9,2],[9,1],
@@ -352,7 +332,10 @@ def func_inter(input1_list,*v):
     return func_diago(result,*v)
 
 def func_inter_0(input1_list,*v):
-    v=np.concatenate(([0],v))
+    v1=np.concatenate(([0], v[:4]))
+    v2=np.concatenate(([0], v[4:8]))
+    v3=np.concatenate(([0], v[8:]))
+    v=np.concatenate((v1,v2,v3))
     return func_inter(input1_list,*v)
 
 def curv_fit_function(curv_list):
@@ -383,7 +366,7 @@ def curv_fit_function(curv_list):
 
     input_list = np.array([],dtype=int)
     output_list = np.array([])
-    v0 = [random.uniform(0, 3500) for _ in range(9)]
+    v0 = [random.uniform(0, 3500) for _ in range(17)]
     print(" intitial parameters : ",v0)
 
     for n_p_ in curv_list:
@@ -398,13 +381,16 @@ def curv_fit_function(curv_list):
     #v_th = [1714,1487,1925,2352,2053,2528,2247,2656,820]
     
     print(np.sqrt(np.diag(cov_v_th)))
-    v_fin = np.concatenate(([0],v_th))
+    v_1=np.concatenate(([0], v_th[:4]))
+    v_2=np.concatenate(([0], v_th[4:8]))
+    v_3=np.concatenate(([0], v_th[8:]))
+    v_fin=np.concatenate((v_1,v_2,v_3))
     loss,E_calc,E_exp,list_J = diagonalisation(fit_list,v_fin)
 
     for i,vi in enumerate(v_fin):
         print("v["+str(i)+"] = ",vi)
     x = np.arange(len(E_calc))
-    comp_list = np.vstack((list_J,(E_calc-E_exp)/E_exp))
+    comp_list = np.vstack((list_J,(E_calc-E_exp)))
     print(comp_list)
     print("loss : ",loss)
     plt.plot(x, E_exp, marker='^', mfc='r', mec='r', ms=6, ls='--', c='r', lw=2)
@@ -412,24 +398,8 @@ def curv_fit_function(curv_list):
     plt.show()
     return loss,E_calc,E_exp 
 
+#a,b,c=curv_fit_function(fit_list)
 
-a,b,c=curv_fit_function(fit_list)
-
-#v_prof = [0,1714,1487,1925,2352,2053,2528,2247,2656,820]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+v=[0.0, 1481.7253626150946, 2302.1162652646462, 2469.8448335009834, 2624.0736069385393, 0.0, 1437.4638489830231, 2260.0796044311396, 2793.905999859872, 2741.630536194231, 0.0, 2644.9797287207307, 1294.1784477120023, 3140.2632639601443, 2053.040849030701, 2826.8972038158167, 3098.887133491251, 2245.6031970398094, 3483.070225454131, 822.5005559807602]
+a,b,c,d = diagonalisation(test_list,v)
+print(a)
