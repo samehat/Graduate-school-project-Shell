@@ -221,8 +221,8 @@ def initalization_ph(data):
     
     return dict_mat
 
-#dict_th = initalization(data) # dictionnary of the matrix
-dict_th_ph = initalization_ph(data)
+dict_th = initalization(data) # dictionnary of the matrix
+#dict_th_ph = initalization_ph(data)
 
 def diagonalisation(np_list,v):  # change the diagonalisation when using particule hole symmetry
     '''
@@ -248,6 +248,7 @@ def diagonalisation(np_list,v):  # change the diagonalisation when using particu
     loss_list2 = np.array([])
     E_loss_list = np.array([])
     J0_list = np.array([])
+    print(v)
 
     for n_p in np_list:
 
@@ -255,13 +256,13 @@ def diagonalisation(np_list,v):  # change the diagonalisation when using particu
         #print(n,p)
         J_list = extract_J_values(n,p)
         J1_list,E_list = extract_E_J_states(n,p)
-        J0_list = np.append(J1_list,J0_list)
+        J0_list = np.append(J0_list,J1_list)
         dico_j = {}
 
         sub = 0
 
         for j in J_list: # one iteration of each j in this list
-            mat = v_evaluate(dict_th_ph[(str(n),str(p),str(j))],*v)
+            mat = v_evaluate(dict_th[(str(n),str(p),str(j))],*v)
             eigen_mat = np.linalg.eigh(mat)[0]
             if j == extract_J_GS(n,p): # if Ground State which should be in first position butif not the case mmmhh
                 sub = np.min(eigen_mat)
@@ -278,7 +279,7 @@ def diagonalisation(np_list,v):  # change the diagonalisation when using particu
         E_loss_list = np.append(E_loss_list,E_list)
         
     #print("not sub list :",loss_list2),print("sub list :",loss_list),print("diff",E_loss_list-loss_list)
-    return np.sqrt(np.sum((loss_list-E_loss_list)**2)/loss_list.size),loss_list,E_loss_list,J0_list
+    return np.sqrt(np.sum((loss_list[loss_list !=0]-E_loss_list[E_loss_list !=0])**2)/loss_list[loss_list !=0].size),loss_list,E_loss_list,J0_list
 
 def func_diago(np_list,*v):  
 
@@ -296,7 +297,7 @@ def func_diago(np_list,*v):
         sub = 10e100
 
         for j in J_list: # one iteration of each j in this list
-            mat = v_evaluate(dict_th_ph[(str(n),str(p),str(j))],*v) 
+            mat = v_evaluate(dict_th[(str(n),str(p),str(j))],*v) 
             eigen_mat = np.linalg.eigh(mat)[0]
             #print(eigen_mat)
             if j == extract_J_GS(n,p): # if Ground State which should be in first position butif not the case 
@@ -335,9 +336,9 @@ def func_diago(np_list,*v):
 
 
 # list of isotopes to fit
-fit_list=[[10,8],[10,7],[10,6],[10,5],[10,4],[10,3],[10,2],
-[9,9],[9,6],[9,5],[9,4],[9,3],[9,2],[9,1],
-[8,7],[8,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0]]
+fit_list=[[10,8],[10,7],[10,6],[10,5],[10,4],[10,3],[10,2]]
+#[9,9],[9,6],[9,5],[9,4],[9,3],[9,2],[9,1],
+#[8,7],[8,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0]]
 
 def func_inter(input1_list,*v):
     result = []
@@ -395,16 +396,21 @@ def curv_fit_function(curv_list):
         
     #print(input_list),#print(output_list)
     v_th,cov_v_th=curve_fit(func_inter_0,input_list,output_list,p0=v0) #p0 =v_test
-    #v_th = [1714,1487,1925,2352,2053,2528,2247,2656,820]
-    
-    print(np.sqrt(np.diag(cov_v_th)))
+    std_devs = np.sqrt(np.diagonal(cov_v_th))
+
+    # Créer une matrice de corrélation
+    cor_matrix = cov_v_th / np.outer(std_devs, std_devs)
+
+    print("Matrice de corrélation :\n", cor_matrix)
+    print("Uncertainties :\n",std_devs)
+
     v_fin = np.concatenate(([0],v_th))
     loss,E_calc,E_exp,list_J = diagonalisation(fit_list,v_fin)
 
     for i,vi in enumerate(v_fin):
         print("v["+str(i)+"] = ",vi)
     x = np.arange(len(E_calc))
-    comp_list = np.vstack((list_J,(E_calc-E_exp)/E_exp))
+    comp_list = np.vstack((list_J,(E_calc-E_exp)))
     print(comp_list)
     print("loss : ",loss)
     plt.plot(x, E_exp, marker='^', mfc='r', mec='r', ms=6, ls='--', c='r', lw=2)
@@ -413,10 +419,11 @@ def curv_fit_function(curv_list):
     return loss,E_calc,E_exp 
 
 
-a,b,c=curv_fit_function(fit_list)
+#a,b,c=curv_fit_function(fit_list)
 
-#v_prof = [0,1714,1487,1925,2352,2053,2528,2247,2656,820]
-
+#v_prof = [0,1670.5902,1449.3596,1901.3679,2353.7929,1979.5386,2529.72,2182.9408,2652.049,819.9887]
+#a,b,c,d = diagonalisation(fit_list,v_prof)
+#print(a),print(b),print(c),print(b-c),print(d)
 
 
 

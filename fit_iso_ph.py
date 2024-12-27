@@ -251,7 +251,7 @@ def diagonalisation(np_list,v):  # plutot une liste de p et de n
     for n_p in np_list:
 
         n,p=n_p[0],n_p[1]
-        print(n,p)
+        #print(n,p)
         J_list = extract_J_values(n,p)
         J1_list,E_list = extract_E_J_states(n,p)
         J0_list = np.append(J1_list,J0_list)
@@ -277,7 +277,8 @@ def diagonalisation(np_list,v):  # plutot une liste de p et de n
         E_loss_list = np.append(E_loss_list,E_list)
         
     #print("not sub list :",loss_list2),print("sub list :",loss_list),print("diff",E_loss_list-loss_list)
-    return np.sqrt(np.sum((loss_list-E_loss_list)**2)/loss_list.size),loss_list,E_loss_list,J0_list
+
+    return np.sqrt(np.sum((loss_list[loss_list !=0]-E_loss_list[E_loss_list !=0])**2)/loss_list[loss_list !=0].size),loss_list,E_loss_list,J0_list
 
 def func_diago(np_list,*v):  
 
