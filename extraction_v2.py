@@ -9,7 +9,7 @@ import random
 
 
 
-filepath = "data\data3.csv"
+filepath = "data\data4.csv"
 
 
 
@@ -248,7 +248,7 @@ def diagonalisation(np_list,v):  # change the diagonalisation when using particu
     loss_list2 = np.array([])
     E_loss_list = np.array([])
     J0_list = np.array([])
-    print(v)
+    #print(v)
 
     for n_p in np_list:
 
@@ -284,7 +284,7 @@ def diagonalisation(np_list,v):  # change the diagonalisation when using particu
 def func_diago(np_list,*v):  
 
     loss_list = np.array([])
-    print(v)
+    #print(v)
 
     for n_p in np_list:
 
@@ -337,7 +337,7 @@ def func_diago(np_list,*v):
 
 # list of isotopes to fit
 fit_list=[[10,8],[10,7],[10,6],[10,5],[10,4],[10,3],[10,2]]
-#[9,9],[9,6],[9,5],[9,4],[9,3],[9,2],[9,1],
+#[9,9],[9,6],[9,5],[9,4],[9,3],[9,2],[9,1]]
 #[8,7],[8,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0]]
 
 def func_inter(input1_list,*v):
@@ -416,10 +416,58 @@ def curv_fit_function(curv_list):
     plt.plot(x, E_exp, marker='^', mfc='r', mec='r', ms=6, ls='--', c='r', lw=2)
     plt.plot(x, E_calc, marker='+', mfc='k', mec='k', ms=6, ls='--', c='b', lw=2)
     plt.show()
-    return loss,E_calc,E_exp 
+    return loss,v_fin,E_calc,E_exp 
+
+def curv_fit_fold(curv_list):
+    '''
+    Use fitting method : scipy curve_fit which requires that x and y must have the same length
+
+    Create as many np list there is as there are experimental energies
+
+    Print energies and coefficient
+    
 
 
-#a,b,c=curv_fit_function(fit_list)
+    Parameters :
+    ------------
+    `list` : curv_list, list of isotopes
+
+    Return :
+    ---------
+    `plot` : Plot of the energies
+
+    `list` : Coefficient values, v_fin
+
+    `array` : Covariant matrix, cov_v_th
+
+
+
+    '''
+
+    input_list = np.array([],dtype=int)
+    output_list = np.array([])
+    v0 = [random.uniform(0, 3500) for _ in range(9)]
+    #print(" intitial parameters : ",v0)
+
+    for n_p_ in curv_list:
+        e = extract_E_J_states(n_p_[0],n_p_[1])[1]
+        output_list = np.append(output_list,e)
+
+        partial_list = np.full(shape=e.size,fill_value=int(str(n_p_[0])+f"{n_p_[1]:02}"),dtype=int)
+        input_list = np.append(input_list,partial_list)
+        
+    #print(input_list),#print(output_list)
+    v_th,cov_v_th=curve_fit(func_inter_0,input_list,output_list,p0=v0) #p0 =v_test
+    std_devs = np.sqrt(np.diagonal(cov_v_th))
+
+    v_fin = np.concatenate(([0],v_th))
+    loss,E_calc,E_exp,list_J = diagonalisation(fit_list,v_fin)
+
+    return loss,v_fin,E_calc,E_exp 
+
+
+
+#a,b,c,d=curv_fit_function(fit_list)
 
 #v_prof = [0,1670.5902,1449.3596,1901.3679,2353.7929,1979.5386,2529.72,2182.9408,2652.049,819.9887]
 #a,b,c,d = diagonalisation(fit_list,v_prof)

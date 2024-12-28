@@ -9,7 +9,7 @@ import random
 
 
 
-filepath = "data\data3.csv"
+filepath = "data\data4.csv"
 
 
 
@@ -205,7 +205,7 @@ def initalization_ph(data):
         i = (np[0]+np[1]) % 2 
         J_list = extract_J_values(n,p)
 
-        path = "data\piso"+str(p)+"\mat"+f"{n:02}"+f"{p:02}"+".txt"
+        path = "data\piso"+str(p)+"\mat"+f"{10-n:02}"+f"{p:02}"+".txt"
         with open(path ,"r") as f:
             line = f.read()
             line_list = re.split(r"\n", line)
@@ -367,7 +367,7 @@ def curv_fit_function(curv_list):
 
     input_list = np.array([],dtype=int)
     output_list = np.array([])
-    v0 = [random.uniform(0, 3500) for _ in range(17)]
+    v0 = [random.uniform(0, 3500) for _ in range(8)] + [random.uniform(-3500, 0) for _ in range(9)] 
     print(" intitial parameters : ",v0)
 
     for n_p_ in curv_list:
@@ -379,9 +379,13 @@ def curv_fit_function(curv_list):
         
     #print(input_list),#print(output_list)
     v_th,cov_v_th=curve_fit(func_inter_0,input_list,output_list,p0=v0) #p0 =v_test
-    #v_th = [1714,1487,1925,2352,2053,2528,2247,2656,820]
-    
-    print(np.sqrt(np.diag(cov_v_th)))
+    std_devs = np.sqrt(np.diagonal(cov_v_th))
+
+    # Créer une matrice de corrélation
+    cor_matrix = cov_v_th / np.outer(std_devs, std_devs)
+
+    print("Matrice de corrélation :\n", cor_matrix)
+    print("Uncertainties :\n",std_devs)
     v_1=np.concatenate(([0], v_th[:4]))
     v_2=np.concatenate(([0], v_th[4:8]))
     v_3=np.concatenate(([0], v_th[8:]))
@@ -399,8 +403,8 @@ def curv_fit_function(curv_list):
     plt.show()
     return loss,E_calc,E_exp 
 
-#a,b,c=curv_fit_function(fit_list)
+a,b,c=curv_fit_function(fit_list)
 
-v=[0.0, 1481.7253626150946, 2302.1162652646462, 2469.8448335009834, 2624.0736069385393, 0.0, 1437.4638489830231, 2260.0796044311396, 2793.905999859872, 2741.630536194231, 0.0, 2644.9797287207307, 1294.1784477120023, 3140.2632639601443, 2053.040849030701, 2826.8972038158167, 3098.887133491251, 2245.6031970398094, 3483.070225454131, 822.5005559807602]
-a,b,c,d = diagonalisation(test_list,v)
-print(a)
+#v=[0.0, 1481.7253626150946, 2302.1162652646462, 2469.8448335009834, 2624.0736069385393, 0.0, 1437.4638489830231, 2260.0796044311396, 2793.905999859872, 2741.630536194231, 0.0, 2644.9797287207307, 1294.1784477120023, 3140.2632639601443, 2053.040849030701, 2826.8972038158167, 3098.887133491251, 2245.6031970398094, 3483.070225454131, 822.5005559807602]
+#a,b,c,d = diagonalisation(test_list,v)
+#print(a)

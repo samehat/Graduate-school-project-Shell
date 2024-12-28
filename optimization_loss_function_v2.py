@@ -7,7 +7,7 @@ print("a")
 from extraction_v2 import diagonalisation , data_exp_form , mask_state , initalization
 
 
-filepath = "data\data3.csv"
+filepath = "data\data4.csv"
 print("begining")
 # Initialize a global variable to store the last Ecal_used
 last_Ecal_used = None
@@ -62,17 +62,18 @@ def optimize_using_scipy(n_p_list,v_init):
 
 # Example usage (assuming root_mean_square_loss_function is defined and v_initial is provided)
 fit_list2=[[10,8],[10,7],[10,6],[10,5],[10,4],[10,3],[10,2],[10,1],
-[9,9],[9,7],[9,6],[9,5],[9,4],[9,3],[9,2],[9,1],
-[8,7],[8,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0]]
+[9,9],[9,7],[9,6],[9,5],[9,4],[9,3],[9,2],[9,1]]
+#[8,7],[8,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0]]
             
-#v_9_10 = np.array([1200,1400,1600,2200,2000,2600,2000,2600,800])
+v_9_10 = [1192.54354775, 1477.23135593, 1666.58185783, 2240.09706233, 1983.22880607,
+ 2450.9915553,  1962.25121768, 2554.54793833,  837.59838542]
 
-v_8 = [1713.8091925,  1484.48172167, 1929.37515306, 2359.68310125, 2039.11355149,
-2528.85057569, 2260.29128492, 2653.27379747,  816.88134078]
+#v_8 = [1713.8091925,  1484.48172167, 1929.37515306, 2359.68310125, 2039.11355149,
+#2528.85057569, 2260.29128492, 2653.27379747,  816.88134078]
 
-v_initial = np.array([random.uniform(-500, 500) for _ in range(9)])  # Set first element to zero
+v_initial = np.array([random.uniform(-5, 5) for _ in range(9)])  # Set first element to zero
 print("initial parameters : ",v_initial)
-v_test = np.add(v_8, v_initial)
+v_test = np.add(v_9_10, v_initial)
 #v_test = [1175.64646937, 1478.22919049, 1650.00380408, 2242.33845357, 1967.66590463,
 #2451.55156364, 1950.48169652, 2550.60485793,  828.50555058]
 print(v_test)
